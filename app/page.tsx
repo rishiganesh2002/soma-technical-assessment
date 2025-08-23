@@ -5,6 +5,7 @@ import { useFetchTodos } from "../clientLib/Todos/useFetchTodos";
 import { useCreateTodo } from "../clientLib/Todos/useCreateTodo";
 import { useDeleteTodo } from "../clientLib/Todos/useDeleteTodo";
 import { CreateTodoInput } from "../schema/Todos";
+import { isPastDueDate } from "../utils/client/pastDueDate";
 
 export default function Home() {
   const [newTodo, setNewTodo] = useState<CreateTodoInput>({
@@ -89,38 +90,48 @@ export default function Home() {
           </button>
         </div>
         <ul>
-          {todos.map((todo: Todo) => (
-            <li
-              key={todo.id}
-              className="flex justify-between items-center bg-white bg-opacity-90 p-4 mb-4 rounded-lg shadow-lg"
-            >
-              <div className="flex-1">
-                <span className="text-gray-800 block">{todo.title}</span>
-                <span className="text-sm text-gray-500">
-                  Due: {new Date(todo.dueDate).toLocaleDateString()}
-                </span>
-              </div>
-              <button
-                onClick={() => handleDeleteTodo(todo.id)}
-                disabled={deleteTodoMutation.isPending}
-                className="text-red-500 hover:text-red-700 transition duration-300 disabled:opacity-50 ml-4"
+          {todos.map((todo: Todo) => {
+            const isPastDue = isPastDueDate(todo.dueDate);
+            return (
+              <li
+                key={todo.id}
+                className="flex justify-between items-center bg-white bg-opacity-90 p-4 mb-4 rounded-lg shadow-lg"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <div className="flex-1">
+                  <span className="text-gray-800 block">{todo.title}</span>
+                  <span
+                    className={`text-sm font-medium ${
+                      isPastDue ? "text-red-600" : "text-green-600"
+                    }`}
+                  >
+                    Due: {new Date(todo.dueDate).toLocaleDateString()}
+                    {isPastDue && (
+                      <span className="ml-2 text-xs">(Past Due)</span>
+                    )}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleDeleteTodo(todo.id)}
+                  disabled={deleteTodoMutation.isPending}
+                  className="text-red-500 hover:text-red-700 transition duration-300 disabled:opacity-50 ml-4"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </li>
-          ))}
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>
