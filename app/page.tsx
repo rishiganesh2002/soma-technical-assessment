@@ -94,8 +94,11 @@ export default function Home() {
         {/* Header Section */}
         <div className="text-center mb-6">
           <h1 className="text-5xl font-bold text-slate-900 mb-4">
-            Things To Do
+            The Todo App
           </h1>
+          <p className="text-slate-500 text-center">
+            Manage your complex workflows here!
+          </p>
         </div>
 
         {/* Tasks List */}
