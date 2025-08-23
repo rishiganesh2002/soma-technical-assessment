@@ -1,84 +1,108 @@
-"use client"
-import { Todo } from '@prisma/client';
-import { useState, useEffect } from 'react';
+"use client";
+import { Todo } from "@prisma/client";
+import { useState } from "react";
+import { useFetchTodos } from "../clientLib/Todos/useFetchTodos";
+import { useCreateTodo } from "../clientLib/Todos/useCreateTodo";
+import { useDeleteTodo } from "../clientLib/Todos/useDeleteTodo";
+import { CreateTodoInput } from "../schema/Todos";
 
 export default function Home() {
-  const [newTodo, setNewTodo] = useState('');
-  const [todos, setTodos] = useState([]);
+  const [newTodo, setNewTodo] = useState<CreateTodoInput>({
+    title: "",
+    dueDate: new Date().toISOString().split("T")[0] + "T00:00:00.000Z",
+  });
 
-  useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  const fetchTodos = async () => {
-    try {
-      const res = await fetch('/api/todos');
-      const data = await res.json();
-      setTodos(data);
-    } catch (error) {
-      console.error('Failed to fetch todos:', error);
-    }
-  };
+  const { data: todos = [], isLoading, error } = useFetchTodos();
+  const createTodoMutation = useCreateTodo();
+  const deleteTodoMutation = useDeleteTodo();
 
   const handleAddTodo = async () => {
-    if (!newTodo.trim()) return;
+    if (!newTodo.title.trim() || !newTodo.dueDate) return;
+
     try {
-      await fetch('/api/todos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTodo }),
+      await createTodoMutation.mutateAsync(newTodo);
+      setNewTodo({
+        title: "",
+        dueDate: new Date().toISOString().split("T")[0] + "T00:00:00.000Z",
       });
-      setNewTodo('');
-      fetchTodos();
     } catch (error) {
-      console.error('Failed to add todo:', error);
+      console.error("Failed to add todo:", error);
     }
   };
 
-  const handleDeleteTodo = async (id:any) => {
+  const handleDeleteTodo = async (id: number) => {
     try {
-      await fetch(`/api/todos/${id}`, {
-        method: 'DELETE',
-      });
-      fetchTodos();
+      await deleteTodoMutation.mutateAsync(id);
     } catch (error) {
-      console.error('Failed to delete todo:', error);
+      console.error("Failed to delete todo:", error);
     }
   };
+
+  if (isLoading)
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-orange-500 to-red-500 flex items-center justify-center text-white text-xl">
+        Loading...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-orange-500 to-red-500 flex items-center justify-center text-white text-xl">
+        Error loading todos
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-500 to-red-500 flex flex-col items-center p-4">
       <div className="w-full max-w-md">
-        <h1 className="text-4xl font-bold text-center text-white mb-8">Things To Do App</h1>
-        <div className="flex mb-6">
+        <h1 className="text-4xl font-bold text-center text-white mb-8">
+          Things To Do App
+        </h1>
+        <div className="flex mb-6 gap-2">
           <input
             type="text"
-            className="flex-grow p-3 rounded-l-full focus:outline-none text-gray-700"
+            className="flex-grow p-3 rounded-l-lg focus:outline-none text-gray-700"
             placeholder="Add a new todo"
-            value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-          
+            value={newTodo.title}
+            onChange={(e) =>
+              setNewTodo((prev) => ({ ...prev, title: e.target.value }))
+            }
           />
-          <input type="date" />
+          <input
+            type="date"
+            className="p-3 focus:outline-none text-gray-700"
+            value={newTodo.dueDate.split("T")[0]}
+            onChange={(e) =>
+              setNewTodo((prev) => ({
+                ...prev,
+                dueDate: new Date(e.target.value).toISOString(),
+              }))
+            }
+          />
           <button
             onClick={handleAddTodo}
-            className="bg-white text-indigo-600 p-3 rounded-r-full hover:bg-gray-100 transition duration-300"
+            disabled={createTodoMutation.isPending}
+            className="bg-white text-indigo-600 p-3 rounded-r-lg hover:bg-gray-100 transition duration-300 disabled:opacity-50"
           >
-            Add
+            {createTodoMutation.isPending ? "Adding..." : "Add"}
           </button>
         </div>
         <ul>
-          {todos.map((todo:Todo) => (
+          {todos.map((todo: Todo) => (
             <li
               key={todo.id}
               className="flex justify-between items-center bg-white bg-opacity-90 p-4 mb-4 rounded-lg shadow-lg"
             >
-              <span className="text-gray-800">{todo.title}</span>
+              <div className="flex-1">
+                <span className="text-gray-800 block">{todo.title}</span>
+                <span className="text-sm text-gray-500">
+                  Due: {new Date(todo.dueDate).toLocaleDateString()}
+                </span>
+              </div>
               <button
                 onClick={() => handleDeleteTodo(todo.id)}
-                className="text-red-500 hover:text-red-700 transition duration-300"
+                disabled={deleteTodoMutation.isPending}
+                className="text-red-500 hover:text-red-700 transition duration-300 disabled:opacity-50 ml-4"
               >
-                {/* Delete Icon */}
                 <svg
                   className="w-6 h-6"
                   fill="none"
