@@ -1,5 +1,8 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { TodoService } from "@/services/todoService";
+import { TodoIdSchema } from "@/schema/Todos";
+
+const todoService = new TodoService();
 
 interface Params {
   params: {
@@ -7,18 +10,42 @@ interface Params {
   };
 }
 
-export async function DELETE(request: Request, { params }: Params) {
-  const id = parseInt(params.id);
-  if (isNaN(id)) {
-    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-  }
-
+export async function GET(request: Request, { params }: Params) {
   try {
-    await prisma.todo.delete({
-      where: { id },
-    });
-    return NextResponse.json({ message: 'Todo deleted' }, { status: 200 });
+    const validatedParams = TodoIdSchema.parse(params);
+    const id = parseInt(validatedParams.id);
+
+    const todo = await todoService.getTodoById(id);
+    if (!todo) {
+      return NextResponse.json({ error: "Todo not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(todo);
   } catch (error) {
-    return NextResponse.json({ error: 'Error deleting todo' }, { status: 500 });
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Error fetching todo" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request, { params }: Params) {
+  try {
+    const validatedParams = TodoIdSchema.parse(params);
+    const id = parseInt(validatedParams.id);
+
+    const deletedTodo = await todoService.deleteTodoById(id);
+    if (!deletedTodo) {
+      return NextResponse.json({ error: "Todo not found" }, { status: 404 });
+    }
+    return NextResponse.json(
+      { message: "Todo deleted", todo: deletedTodo },
+      { status: 200 }
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Error deleting todo" }, { status: 500 });
   }
 }

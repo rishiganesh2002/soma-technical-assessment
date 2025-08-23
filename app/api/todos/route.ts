@@ -1,32 +1,33 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { TodoService } from "@/services/todoService";
+import { TodoSchema } from "@/schema/Todos";
+
+const todoService = new TodoService();
 
 export async function GET() {
   try {
-    const todos = await prisma.todo.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const todos = await todoService.getTodos();
     return NextResponse.json(todos);
   } catch (error) {
-    return NextResponse.json({ error: 'Error fetching todos' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error fetching todos" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const { title } = await request.json();
-    if (!title || title.trim() === '') {
-      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
-    }
-    const todo = await prisma.todo.create({
-      data: {
-        title,
-      },
-    });
+    const body = await request.json();
+    const validatedData = TodoSchema.parse(body);
+
+    const todo = await todoService.createTodo(validatedData);
     return NextResponse.json(todo, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Error creating todo' }, { status: 500 });
+    if (error instanceof Error) {
+      console.log(error.message);
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Error creating todo" }, { status: 500 });
   }
 }
