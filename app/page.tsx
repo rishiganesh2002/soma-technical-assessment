@@ -9,7 +9,7 @@ import { CreateTodoInput } from "../schema/Todos";
 export default function Home() {
   const [newTodo, setNewTodo] = useState<CreateTodoInput>({
     title: "",
-    dueDate: new Date().toISOString().split("T")[0] + "T00:00:00.000Z",
+    dueDate: new Date().toISOString(),
   });
 
   const { data: todos = [], isLoading, error } = useFetchTodos();
@@ -23,7 +23,7 @@ export default function Home() {
       await createTodoMutation.mutateAsync(newTodo);
       setNewTodo({
         title: "",
-        dueDate: new Date().toISOString().split("T")[0] + "T00:00:00.000Z",
+        dueDate: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Failed to add todo:", error);
@@ -70,11 +70,13 @@ export default function Home() {
           <input
             type="date"
             className="p-3 focus:outline-none text-gray-700"
-            value={newTodo.dueDate.split("T")[0]}
+            value={new Date(newTodo.dueDate).toISOString().split("T")[0]}
             onChange={(e) =>
               setNewTodo((prev) => ({
                 ...prev,
-                dueDate: new Date(e.target.value).toISOString(),
+                dueDate: new Date(
+                  e.target.value + "T00:00:00.000Z"
+                ).toISOString(),
               }))
             }
           />
