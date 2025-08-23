@@ -6,6 +6,7 @@ export async function createTodo(todo: CreateTodoInput): Promise<Todo> {
   return await prisma.todo.create({
     data: {
       title: todo.title,
+      dueDate: new Date(todo.dueDate),
     },
   });
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { TodoService } from "@/services/todoService";
-import { CreateTodoSchema } from "@/schema/Todos";
+import { TodoSchema } from "@/schema/Todos";
 
 const todoService = new TodoService();
 
@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const validatedData = CreateTodoSchema.parse(body);
+    const validatedData = TodoSchema.parse(body);
 
     const todo = await todoService.createTodo(validatedData);
     return NextResponse.json(todo, { status: 201 });
