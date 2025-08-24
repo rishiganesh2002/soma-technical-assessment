@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,18 +13,52 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateTodo } from "@/clientLib/Todos/useCreateTodo";
+import { useSearchImageByQuery } from "@/clientLib/Pexels/useSearchImageByQuery";
 import { CreateTodoInput } from "@/schema/Todos";
-import { Plus, Calendar } from "lucide-react";
+import { Plus, Calendar, Image as ImageIcon } from "lucide-react";
+import debounce from "lodash.debounce";
 
 export default function CreateTodoForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<CreateTodoInput>({
     title: "",
     dueDate: new Date().toISOString(),
+    imageUrl: undefined,
+    imageAlt: undefined,
   });
+  const [debouncedTitle, setDebouncedTitle] = useState("");
 
   const createTodoMutation = useCreateTodo();
+
+  // Debounced function to update the search query
+  const debouncedSearch = useCallback(
+    debounce((title: string) => {
+      setDebouncedTitle(title);
+    }, 500),
+    []
+  );
+
+  // Update debounced title when form title changes
+  useEffect(() => {
+    if (formData.title.trim()) {
+      debouncedSearch(formData.title.trim());
+    } else {
+      setDebouncedTitle("");
+    }
+  }, [formData.title, debouncedSearch]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  // Use the Pexels hook with debounced title
+  const { data: imageResult, isLoading: isImageLoading } =
+    useSearchImageByQuery(debouncedTitle);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,11 +66,20 @@ export default function CreateTodoForm() {
     if (!formData.title.trim() || !formData.dueDate) return;
 
     try {
-      await createTodoMutation.mutateAsync(formData);
+      const todoData = {
+        ...formData,
+        imageUrl: imageResult?.imageUrl,
+        imageAlt: imageResult?.imageAlt,
+      };
+
+      await createTodoMutation.mutateAsync(todoData);
       setFormData({
         title: "",
         dueDate: new Date().toISOString(),
+        imageUrl: undefined,
+        imageAlt: undefined,
       });
+      setDebouncedTitle("");
       setIsOpen(false);
     } catch (error) {
       console.error("Failed to create todo:", error);
@@ -91,6 +135,40 @@ export default function CreateTodoForm() {
             />
           </div>
 
+          {/* Image Preview Section */}
+          {debouncedTitle && debouncedTitle.trim().length > 0 && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                Task Preview
+              </Label>
+
+              {isImageLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              ) : imageResult ? (
+                <div className="space-y-2">
+                  <Image
+                    src={imageResult.imageUrl}
+                    alt={imageResult.imageAlt}
+                    width={300}
+                    height={240}
+                    className="w-full h-40 object-cover rounded-lg border border-gray-200"
+                  />
+                  <p className="text-sm text-gray-600 italic">
+                    {imageResult.imageAlt}
+                  </p>
+                </div>
+              ) : debouncedTitle.length > 2 ? (
+                <div className="text-sm text-gray-500 italic">
+                  No relevant image found for "{debouncedTitle}"
+                </div>
+              ) : null}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label
               htmlFor="dueDate"
@@ -122,7 +200,11 @@ export default function CreateTodoForm() {
             </Button>
             <Button
               type="submit"
-              disabled={createTodoMutation.isPending || !formData.title.trim()}
+              disabled={
+                createTodoMutation.isPending ||
+                !formData.title.trim() ||
+                isImageLoading
+              }
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
             >
               {createTodoMutation.isPending ? "Creating..." : "Create Task"}
