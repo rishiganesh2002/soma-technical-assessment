@@ -2,15 +2,22 @@
 import { Todo } from "@prisma/client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import { useFetchTodos, useDeleteTodo } from "../clientLib/Todos";
-import { isPastDueDate } from "../utils/client";
+import { isPastDueDate, sortTodosByDate } from "../utils/client";
 import { CreateTodoForm } from "../components/home";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const router = useRouter();
+  const [isSorted, setIsSorted] = useState(false);
   const { data: todos = [], isLoading, error } = useFetchTodos();
   const deleteTodoMutation = useDeleteTodo();
+
+  const sortedTodos = useMemo(() => {
+    if (!isSorted) return todos;
+    return sortTodosByDate(todos);
+  }, [todos, isSorted]);
 
   const handleDeleteTodo = async (id: number) => {
     try {
@@ -97,14 +104,48 @@ export default function Home() {
           <h1 className="text-6xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-slate-900 bg-clip-text text-transparent mb-4">
             The Todo App
           </h1>
-          <p className="text-slate-600 text-lg font-medium">
+          <p className="text-slate-600 text-lg font-medium mb-6">
             Manage your complex workflows with visual inspiration ✨
           </p>
+
+          {/* Sort Toggle */}
+          {todos.length > 0 && (
+            <div className="flex justify-start">
+              <button
+                onClick={() => setIsSorted(!isSorted)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  isSorted
+                    ? "bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200"
+                    : "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
+                }`}
+                title={
+                  isSorted
+                    ? "Show original order"
+                    : "Sort by due date (earliest first)"
+                }
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+                  />
+                </svg>
+                {isSorted ? "Original Order" : "Sort by Date"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Tasks List */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {todos.length === 0 ? (
+          {sortedTodos.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md mx-auto">
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -131,7 +172,7 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            todos.map((todo: Todo) => {
+            sortedTodos.map((todo: Todo) => {
               const isPastDue = isPastDueDate(todo.dueDate);
               return (
                 <div
