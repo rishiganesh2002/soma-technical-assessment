@@ -2,10 +2,9 @@
 import { Todo } from "@prisma/client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useFetchTodos } from "../clientLib/Todos/useFetchTodos";
-import { useDeleteTodo } from "../clientLib/Todos/useDeleteTodo";
-import { isPastDueDate } from "../utils/client/pastDueDate";
-import CreateTodoForm from "../components/home/CreateTodoForm";
+import { useFetchTodos, useDeleteTodo } from "../clientLib/Todos";
+import { isPastDueDate } from "../utils/client";
+import { CreateTodoForm } from "../components/home";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
