@@ -126,6 +126,10 @@ export default function TodoDetailPage() {
               Due: {new Date(todo.dueDate).toLocaleDateString()}
             </span>
           </div>
+          <div className="text-sm text-slate-500 mt-2">
+            Dependencies: {todo.dependencies.length} • Dependents:{" "}
+            {todo.dependents.length}
+          </div>
         </div>
 
         {/* Todo Content */}
