@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { Todo } from "@prisma/client";
+import type { TodoWithRelations } from "../../schema/Todos";
 
-const fetchTodoById = async (id: number): Promise<Todo> => {
+const fetchTodoById = async (id: number): Promise<TodoWithRelations> => {
   const response = await axios.get(`/api/todos/${id}`);
   return response.data;
 };

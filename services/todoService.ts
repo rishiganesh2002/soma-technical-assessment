@@ -1,10 +1,11 @@
 import { Todo } from "@prisma/client";
+import type { TodoWithRelations } from "../schema/Todos";
 import { TodoInput } from "../schema/Todos";
 import { getTodos, createTodo, getTodoById, deleteTodoById } from "../db/Todos";
 import { createTodoDependencies } from "../db/TodoDependencies/createTodoDependencies";
 
 export class TodoService {
-  async getTodos(): Promise<Todo[]> {
+  async getTodos(): Promise<TodoWithRelations[]> {
     return await getTodos();
   }
 
@@ -20,7 +21,7 @@ export class TodoService {
     return createdTodo;
   }
 
-  async getTodoById(id: number): Promise<Todo | null> {
+  async getTodoById(id: number): Promise<TodoWithRelations | null> {
     return await getTodoById(id);
   }
 

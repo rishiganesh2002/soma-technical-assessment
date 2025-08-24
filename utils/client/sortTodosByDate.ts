@@ -1,11 +1,13 @@
-import { Todo } from "@prisma/client";
+import type { TodoWithRelations } from "../../schema/Todos";
 
 /**
  * Sorts todos by due date from earliest to latest
  * @param todos - Array of todos to sort
  * @returns New sorted array (original array is not mutated)
  */
-export const sortTodosByDate = (todos: Todo[]): Todo[] => {
+export const sortTodosByDate = (
+  todos: TodoWithRelations[]
+): TodoWithRelations[] => {
   return [...todos].sort((a, b) => {
     const dateA = new Date(a.dueDate).getTime();
     const dateB = new Date(b.dueDate).getTime();

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 
 export const TodoSchema = z.object({
   title: z
@@ -18,3 +19,8 @@ export const TodoIdSchema = z.object({
 export type CreateTodoInput = z.infer<typeof TodoSchema>;
 export type TodoInput = z.infer<typeof TodoSchema>;
 export type TodoIdParams = z.infer<typeof TodoIdSchema>;
+
+// API-facing types
+export type TodoWithRelations = Prisma.TodoGetPayload<{
+  include: { dependencies: true; dependents: true };
+}>;

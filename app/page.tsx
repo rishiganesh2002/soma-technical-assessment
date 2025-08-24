@@ -1,5 +1,5 @@
 "use client";
-import { Todo } from "@prisma/client";
+import type { TodoWithRelations } from "../schema/Todos";
 import { useState, useMemo } from "react";
 import { useFetchTodos, useDeleteTodo } from "../clientLib/Todos";
 import { sortTodosByDate } from "../utils/client";
@@ -185,7 +185,7 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                sortedTodos.map((todo: Todo) => (
+                sortedTodos.map((todo: TodoWithRelations) => (
                   <TodoCard
                     key={todo.id}
                     todo={todo}
@@ -208,7 +208,7 @@ export default function Home() {
                 paths
               </p>
             </div>
-            <DependencyGraph />
+            <DependencyGraph todos={todos} />
           </TabsContent>
         </Tabs>
       </div>

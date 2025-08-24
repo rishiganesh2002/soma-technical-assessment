@@ -1,12 +1,12 @@
 "use client";
 
-import { Todo } from "@prisma/client";
+import type { TodoWithRelations } from "../../schema/Todos";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { isPastDueDate } from "../../utils/client";
 
 interface TodoCardProps {
-  todo: Todo;
+  todo: TodoWithRelations;
   onDelete: (id: number) => void;
   isDeleting: boolean;
 }
