@@ -7,16 +7,8 @@ export async function getTodoById(id: number): Promise<Todo | null> {
       id,
     },
     include: {
-      parentTodos: {
-        include: {
-          parent: true,
-        },
-      },
-      childTodos: {
-        include: {
-          child: true,
-        },
-      },
+      dependencies: true,
+      dependents: true,
     },
   });
 }

@@ -16,8 +16,8 @@ model Todo {
   imageAlt  String?
   
   // Dependency relationships
-  parentTodos TodoDependency[] @relation("TodoDependencies")
-  childTodos  TodoDependency[] @relation("DependentTodos")
+  dependencies TodoDependency[] @relation("DependentTodos")  // What this task needs to wait for (incoming)
+  dependents   TodoDependency[] @relation("TodoDependencies") // What tasks are waiting for this task (outgoing)
 }
 
 model TodoDependency {
