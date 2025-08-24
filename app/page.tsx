@@ -1,5 +1,6 @@
 "use client";
 import { Todo } from "@prisma/client";
+import Image from "next/image";
 import { useFetchTodos } from "../clientLib/Todos/useFetchTodos";
 import { useDeleteTodo } from "../clientLib/Todos/useDeleteTodo";
 import { isPastDueDate } from "../utils/client/pastDueDate";
@@ -118,7 +119,21 @@ export default function Home() {
                   key={todo.id}
                   className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-all duration-200"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    {/* Image Thumbnail */}
+                    {todo.imageUrl && (
+                      <div className="flex-shrink-0">
+                        <Image
+                          src={todo.imageUrl}
+                          alt={todo.imageAlt || `Image for ${todo.title}`}
+                          width={80}
+                          height={80}
+                          className="w-20 h-20 object-cover rounded-lg border border-slate-200"
+                        />
+                      </div>
+                    )}
+
+                    {/* Todo Content */}
                     <div className="flex-1">
                       <h3 className="text-lg font-medium text-slate-900 mb-2">
                         {todo.title}
@@ -141,11 +156,19 @@ export default function Home() {
                           Due: {new Date(todo.dueDate).toLocaleDateString()}
                         </span>
                       </div>
+                      {/* Alt Text Display */}
+                      {todo.imageAlt && (
+                        <p className="text-sm text-slate-500 mt-2 italic">
+                          {todo.imageAlt}
+                        </p>
+                      )}
                     </div>
+
+                    {/* Delete Button */}
                     <button
                       onClick={() => handleDeleteTodo(todo.id)}
                       disabled={deleteTodoMutation.isPending}
-                      className="ml-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-50"
+                      className="ml-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
                       title="Delete task"
                     >
                       <svg

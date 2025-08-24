@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PexelsSearchQuerySchema } from "@/schema/Pexels";
+import { PexelsService } from "@/services/pexelsService";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,11 +22,21 @@ export async function GET(request: NextRequest) {
 
     const { query: validatedQuery } = validationResult.data;
 
-    // Placeholder content for now
+    // Use PexelsService to search for images
+    const pexelsService = new PexelsService();
+    const result = await pexelsService.search({ query: validatedQuery });
+
+    if (!result) {
+      return NextResponse.json(
+        { error: "No images found for the given query" },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json({
-      message: "Pexels search endpoint",
+      success: true,
       query: validatedQuery,
-      status: "stub - implementation pending",
+      image: result,
     });
   } catch (error) {
     console.error("Error in Pexels search route:", error);

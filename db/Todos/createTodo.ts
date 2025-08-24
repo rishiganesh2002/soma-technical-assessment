@@ -7,6 +7,8 @@ export async function createTodo(todo: CreateTodoInput): Promise<Todo> {
     data: {
       title: todo.title,
       dueDate: new Date(todo.dueDate),
+      imageUrl: todo.imageUrl,
+      imageAlt: todo.imageAlt,
     },
   });
 }
