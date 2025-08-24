@@ -14,4 +14,22 @@ model Todo {
   createdAt DateTime  @default(now())
   imageUrl  String?
   imageAlt  String?
+  
+  // Dependency relationships
+  parentTodos TodoDependency[] @relation("TodoDependencies")
+  childTodos  TodoDependency[] @relation("DependentTodos")
+}
+
+model TodoDependency {
+  id          Int      @id @default(autoincrement())
+  parentTodo  Int
+  childTodo   Int
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  parent      Todo     @relation("TodoDependencies", fields: [parentTodo], references: [id], onDelete: Cascade)
+  child       Todo     @relation("DependentTodos", fields: [childTodo], references: [id], onDelete: Cascade)
+  
+  // Unique constraint to prevent duplicate dependencies and circular references
+  @@unique([parentTodo, childTodo])
 }

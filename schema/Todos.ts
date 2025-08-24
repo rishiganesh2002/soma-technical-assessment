@@ -8,6 +8,7 @@ export const TodoSchema = z.object({
   dueDate: z.iso.datetime("Due date must be a valid ISO datetime string"),
   imageUrl: z.string().optional(),
   imageAlt: z.string().optional(),
+  dependencies: z.array(z.number()).optional(),
 });
 
 export const TodoIdSchema = z.object({

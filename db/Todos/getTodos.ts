@@ -6,5 +6,19 @@ export async function getTodos(): Promise<Todo[]> {
     orderBy: {
       createdAt: "desc",
     },
+    include: {
+      // Include parent tasks (dependencies)
+      parentTodos: {
+        include: {
+          parent: true,
+        },
+      },
+      // Include child tasks (dependents)
+      childTodos: {
+        include: {
+          child: true,
+        },
+      },
+    },
   });
 }

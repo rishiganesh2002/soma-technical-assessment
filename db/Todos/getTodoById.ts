@@ -6,5 +6,19 @@ export async function getTodoById(id: number): Promise<Todo | null> {
     where: {
       id,
     },
+    include: {
+      // Include parent tasks (dependencies)
+      parentTodos: {
+        include: {
+          parent: true,
+        },
+      },
+      // Include child tasks (dependents)
+      childTodos: {
+        include: {
+          child: true,
+        },
+      },
+    },
   });
 }

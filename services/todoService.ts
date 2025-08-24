@@ -1,6 +1,7 @@
 import { Todo } from "@prisma/client";
 import { TodoInput } from "../schema/Todos";
 import { getTodos, createTodo, getTodoById, deleteTodoById } from "../db/Todos";
+import { createTodoDependencies } from "../db/TodoDependencies/createTodoDependencies";
 
 export class TodoService {
   async getTodos(): Promise<Todo[]> {
@@ -8,7 +9,15 @@ export class TodoService {
   }
 
   async createTodo(todo: TodoInput): Promise<Todo> {
-    return await createTodo(todo);
+    // First create the todo
+    const createdTodo = await createTodo(todo);
+
+    // If there are dependencies, create them
+    if (todo.dependencies && todo.dependencies.length > 0) {
+      await createTodoDependencies(createdTodo.id, todo.dependencies);
+    }
+
+    return createdTodo;
   }
 
   async getTodoById(id: number): Promise<Todo | null> {
