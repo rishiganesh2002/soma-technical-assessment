@@ -16,6 +16,8 @@ export const useCreateTodo = () => {
     onSuccess: () => {
       // Invalidate and refetch todos after successful creation
       queryClient.invalidateQueries({ queryKey: ["todos"] });
+      // Also invalidate critical path since new todos could affect dependencies
+      queryClient.invalidateQueries({ queryKey: ["criticalPath"] });
     },
   });
 };

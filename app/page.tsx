@@ -206,7 +206,7 @@ export default function Home() {
                 paths
               </p>
             </div>
-            <DependencyGraph todos={todos} />
+            <DependencyGraph />
           </TabsContent>
         </Tabs>
       </div>

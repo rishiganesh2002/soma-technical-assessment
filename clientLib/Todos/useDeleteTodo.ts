@@ -15,6 +15,8 @@ export const useDeleteTodo = () => {
     onSuccess: () => {
       // Invalidate and refetch todos after successful deletion
       queryClient.invalidateQueries({ queryKey: ["todos"] });
+      // Also invalidate critical path since removing todos affects dependencies
+      queryClient.invalidateQueries({ queryKey: ["criticalPath"] });
     },
   });
 };

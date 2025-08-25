@@ -41,6 +41,8 @@ export const useDeleteDependencies = () => {
       queryClient.invalidateQueries({
         queryKey: ["todo", variables.childTodoId],
       });
+      // Invalidate critical path since dependencies changed
+      queryClient.invalidateQueries({ queryKey: ["criticalPath"] });
     },
   });
 };

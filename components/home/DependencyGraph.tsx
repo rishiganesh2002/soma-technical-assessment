@@ -18,73 +18,92 @@ import ReactFlow, {
 // Types are imported from the main package
 import ElkConstructor from "elkjs/lib/elk.bundled.js";
 import type { ElkNode, ElkExtendedEdge } from "elkjs";
-import type { TodoWithRelations } from "../../schema/Todos";
+import { useGetCriticalPath } from "../../clientLib/Todos/useGetCriticalPath";
 import "reactflow/dist/style.css";
-
-interface DependencyGraphProps {
-  todos: TodoWithRelations[];
-}
 
 // Instantiate ELK from the bundled build
 const elk = new (ElkConstructor as unknown as {
   new (): { layout: (graph: ElkNode) => Promise<any> };
 })();
 
-export default function DependencyGraph({ todos }: DependencyGraphProps) {
+export default function DependencyGraph() {
   const [isLayingOut, setIsLayingOut] = useState(false);
+  const { data: criticalPathData, isLoading, error } = useGetCriticalPath();
 
   // Build base nodes/edges (ids and data only). Positions will be computed by ELK.
   const { baseNodes, baseEdges } = useMemo(() => {
-    if (!todos || todos.length === 0) {
+    if (
+      !criticalPathData ||
+      !criticalPathData.allNodes ||
+      criticalPathData.allNodes.length === 0
+    ) {
       return { baseNodes: [], baseEdges: [] } as {
         baseNodes: Node[];
         baseEdges: Edge[];
       };
     }
 
-    // Nodes without positions yet
-    const nodes: Node[] = todos.map((todo) => ({
+    // Nodes without positions yet - color based on critical path
+    const nodes: Node[] = criticalPathData.allNodes.map((todo) => ({
       id: todo.id.toString(),
       type: "default",
-      data: { label: todo.title },
+      data: {
+        label: todo.title,
+        estimatedDays: todo.estimatedCompletionDays,
+        isCritical: todo.isCritical,
+      },
       position: { x: 0, y: 0 },
       width: 260,
       height: 100,
+      style: {
+        backgroundColor: todo.isCritical ? "#ef4444" : "#f59e0b", // Red for critical, orange for non-critical
+        color: "white",
+        border: "2px solid",
+        borderColor: todo.isCritical ? "#dc2626" : "#d97706",
+        borderRadius: "8px",
+        fontWeight: todo.isCritical ? "600" : "500",
+      },
     }));
 
-    // Edges with duplicates prevented
+    // Edges with duplicates prevented and color based on critical path
     const edgeSet = new Set<string>();
     const edges: Edge[] = [];
 
-    todos.forEach((todo) => {
-      (todo.dependencies || []).forEach((dependency) => {
-        const edgeId = `e${dependency.parentTodo}-${dependency.childTodo}`;
-        if (edgeSet.has(edgeId)) return;
+    criticalPathData.allEdges.forEach((edge) => {
+      const edgeId = `e${edge.parentTodo}-${edge.childTodo}`;
+      if (edgeSet.has(edgeId)) return;
 
-        const parentExists = todos.some((t) => t.id === dependency.parentTodo);
-        const childExists = todos.some((t) => t.id === dependency.childTodo);
-        if (!parentExists || !childExists) return;
+      const parentExists = criticalPathData.allNodes.some(
+        (t) => t.id === edge.parentTodo
+      );
+      const childExists = criticalPathData.allNodes.some(
+        (t) => t.id === edge.childTodo
+      );
+      if (!parentExists || !childExists) return;
 
-        edges.push({
-          id: edgeId,
-          source: dependency.parentTodo.toString(),
-          target: dependency.childTodo.toString(),
-          type: "straight",
-          animated: false,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: "#f59e0b",
-            width: 18,
-            height: 18,
-          },
-          style: { stroke: "#f59e0b", strokeWidth: 2, strokeDasharray: "6 3" },
-        });
-        edgeSet.add(edgeId);
+      edges.push({
+        id: edgeId,
+        source: edge.parentTodo.toString(),
+        target: edge.childTodo.toString(),
+        type: "straight",
+        animated: false,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: edge.isCritical ? "#ef4444" : "#f59e0b", // Red for critical, orange for non-critical
+          width: 18,
+          height: 18,
+        },
+        style: {
+          stroke: edge.isCritical ? "#ef4444" : "#f59e0b", // Red for critical, orange for non-critical
+          strokeWidth: edge.isCritical ? 3 : 2, // Thicker for critical edges
+          strokeDasharray: edge.isCritical ? "none" : "6 3", // Solid for critical, dashed for non-critical
+        },
       });
+      edgeSet.add(edgeId);
     });
 
     return { baseNodes: nodes, baseEdges: edges };
-  }, [todos]);
+  }, [criticalPathData]);
 
   // ReactFlow states
   const [nodes, setNodes, onNodesChange] = useNodesState(baseNodes);
@@ -154,7 +173,73 @@ export default function DependencyGraph({ todos }: DependencyGraphProps) {
     };
   }, [baseNodes, baseEdges, setNodes, setEdges]);
 
-  if (!todos || todos.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="w-full h-[600px] bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center">
+        <div className="text-center text-slate-500">
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-slate-400 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+          </div>
+          <p className="text-lg font-medium mb-2">
+            Calculating Critical Path...
+          </p>
+          <p className="text-sm">Analyzing task dependencies and durations</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-[600px] bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center">
+        <div className="text-center text-slate-500">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+          </div>
+          <p className="text-lg font-medium mb-2">
+            Error Loading Critical Path
+          </p>
+          <p className="text-sm">Failed to calculate critical path</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (
+    !criticalPathData ||
+    !criticalPathData.allNodes ||
+    criticalPathData.allNodes.length === 0
+  ) {
     return (
       <div className="w-full h-[600px] bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center">
         <div className="text-center text-slate-500">
@@ -184,11 +269,37 @@ export default function DependencyGraph({ todos }: DependencyGraphProps) {
 
   return (
     <div className="w-full h-[600px] bg-white rounded-2xl shadow-sm border border-slate-200 relative">
+      {/* Legend */}
+      <div className="absolute top-4 left-4 z-10 bg-white/95 p-4 rounded-lg border text-sm shadow-sm">
+        <div className="font-semibold mb-3 text-gray-800">
+          Critical Path Legend
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-500 rounded border-2 border-red-600"></div>
+            <span className="text-gray-700">Critical Path</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-orange-500 rounded border-2 border-orange-600"></div>
+            <span className="text-gray-700">Non-Critical</span>
+          </div>
+        </div>
+        {criticalPathData.totalDuration > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="text-xs text-gray-500">Total Duration</div>
+            <div className="font-semibold text-gray-800">
+              {criticalPathData.totalDuration} days
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Debug info */}
-      <div className="absolute top-4 left-4 z-10 bg-white/90 p-3 rounded-lg border text-xs">
+      <div className="absolute top-4 right-4 z-10 bg-white/90 p-3 rounded-lg border text-xs">
         <div className="font-semibold mb-2">Debug Info:</div>
         <div>Nodes: {nodes.length}</div>
         <div>Edges: {edges.length}</div>
+        <div>Critical: {criticalPathData.criticalPath.length}</div>
         {isLayingOut && <div className="text-slate-500">Laying out…</div>}
       </div>
 
