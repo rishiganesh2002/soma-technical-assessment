@@ -4,6 +4,7 @@ import { TodoInput } from "../schema/Todos";
 import { getTodos, createTodo, getTodoById, deleteTodoById } from "../db/Todos";
 import { createTodoDependencies } from "../db/TodoDependencies/createTodoDependencies";
 import { getAllTodoDependencies } from "../db/TodoDependencies/getAllTodoDependencies";
+import { deleteTodoDependencies } from "../db/TodoDependencies/deleteTodoDependencies";
 import { detectCycle, type GraphEdge } from "../utils/server/detectCycle";
 
 export class TodoService {
@@ -93,5 +94,48 @@ export class TodoService {
     }
 
     return { successfulDependencies, errors };
+  }
+
+  async deleteDependenciesFromTodo(dependencyIds: number[]): Promise<{
+    successfulDependencies: number[];
+    errors: Array<{ dependencyId: number; reason: string }>;
+  }> {
+    if (dependencyIds.length === 0) {
+      return { successfulDependencies: [], errors: [] };
+    }
+
+    try {
+      // Delete the dependencies
+      const deletedCount = await deleteTodoDependencies(dependencyIds);
+
+      if (deletedCount === dependencyIds.length) {
+        // All dependencies were successfully deleted
+        return {
+          successfulDependencies: dependencyIds,
+          errors: [],
+        };
+      } else {
+        // Some dependencies couldn't be deleted
+        const successful = dependencyIds.slice(0, deletedCount);
+        const failed = dependencyIds.slice(deletedCount);
+
+        return {
+          successfulDependencies: successful,
+          errors: failed.map((id) => ({
+            dependencyId: id,
+            reason: "Dependency not found or could not be deleted",
+          })),
+        };
+      }
+    } catch (error) {
+      // All dependencies failed to delete
+      return {
+        successfulDependencies: [],
+        errors: dependencyIds.map((id) => ({
+          dependencyId: id,
+          reason: error instanceof Error ? error.message : "Unknown error",
+        })),
+      };
+    }
   }
 }

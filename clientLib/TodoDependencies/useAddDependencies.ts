@@ -29,9 +29,13 @@ export const useAddDependencies = () => {
 
   return useMutation({
     mutationFn: addDependencies,
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       // Invalidate and refetch todos after successful dependency addition
       queryClient.invalidateQueries({ queryKey: ["todos"] });
+      // Also invalidate the specific todo that was modified
+      queryClient.invalidateQueries({
+        queryKey: ["todo", variables.childTodoId],
+      });
     },
   });
 };

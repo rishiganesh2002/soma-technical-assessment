@@ -108,11 +108,18 @@ export async function DELETE(
       .split(",")
       .map((id) => parseInt(id));
 
-    // TODO: Implement business logic to remove dependencies
-    console.log(`Removing dependencies ${dependencyIds} from todo ${todoId}`);
+    // Use the TodoService to delete dependencies
+    const todoService = new TodoService();
+    const result = await todoService.deleteDependenciesFromTodo(dependencyIds);
 
     return NextResponse.json(
-      { message: "Dependencies removed successfully", todoId, dependencyIds },
+      {
+        message: "Processed dependency deletion",
+        todoId,
+        requested: dependencyIds,
+        successful: result.successfulDependencies,
+        errors: result.errors,
+      },
       { status: 200 }
     );
   } catch (error) {
