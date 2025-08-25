@@ -5,6 +5,7 @@ import { isPastDueDate } from "../../../utils/client/pastDueDate";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { DependencyForm } from "../../../components/todoDetail/DependencyForm";
 
 export default function TodoDetailPage() {
   const params = useParams();
@@ -206,7 +207,8 @@ export default function TodoDetailPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-slate-200">
+              <div className="pt-4 border-t border-slate-200 space-y-3">
+                <DependencyForm currentTodo={todo} />
                 <Button
                   onClick={() => router.push("/")}
                   variant="outline"

@@ -3,6 +3,8 @@ import type { TodoWithRelations } from "../schema/Todos";
 import { TodoInput } from "../schema/Todos";
 import { getTodos, createTodo, getTodoById, deleteTodoById } from "../db/Todos";
 import { createTodoDependencies } from "../db/TodoDependencies/createTodoDependencies";
+import { getAllTodoDependencies } from "../db/TodoDependencies/getAllTodoDependencies";
+import { detectCycle, type GraphEdge } from "../utils/server/detectCycle";
 
 export class TodoService {
   async getTodos(): Promise<TodoWithRelations[]> {
@@ -27,5 +29,69 @@ export class TodoService {
 
   async deleteTodoById(id: number): Promise<Todo | null> {
     return await deleteTodoById(id);
+  }
+
+  async addDependenciesToTodo(
+    childTodoId: number,
+    dependencies: number[]
+  ): Promise<{
+    successfulDependencies: number[];
+    errors: Array<{ dependencyId: number; reason: string }>;
+  }> {
+    // Retrieve all todos once (vertices don't change)
+    const allTodos = await this.getTodos();
+
+    // Track errors for dependencies that can't be added
+    const errors: Array<{ dependencyId: number; reason: string }> = [];
+    const successfulDependencies: number[] = [];
+
+    // Iterate through each proposed dependency
+    for (const dependencyId of dependencies) {
+      try {
+        // Get fresh dependencies on each iteration since we may have added new ones
+        const currentDependencies = await getAllTodoDependencies();
+
+        // Build the set of current edges (parentTodo -> childTodo pairs)
+        const currentEdges = currentDependencies.map((dep) => ({
+          parentTodo: dep.parentTodo,
+          childTodo: dep.childTodo,
+        }));
+
+        // Add the proposed new edge
+        const proposedEdge = {
+          parentTodo: dependencyId, // The dependency becomes the parent
+          childTodo: childTodoId, // The current todo becomes the child
+        };
+
+        // Combine current edges with the proposed edge for graph building
+        const edgesForGraph: GraphEdge[] = [...currentEdges, proposedEdge];
+
+        // TODO: Implement the validation and addition logic for each dependency
+        // 1. ✅ Create proposed new edge (childTodoId -> dependencyId) - DONE
+        // 2. Build graph with proposed edge using edgesForGraph - DONE
+        // 3. Run DFS to check for cycles
+        const vertices = allTodos.map((t) => ({ id: t.id }));
+        detectCycle(vertices, edgesForGraph);
+
+        // 4. If no cycle, add to database (to be implemented next)
+        // await createTodoDependency(childTodoId, dependencyId)
+        successfulDependencies.push(dependencyId);
+      } catch (error) {
+        // Keep logs concise; avoid printing full stacks in dev console
+        const reason = error instanceof Error ? error.message : "Unknown error";
+        console.warn(`Failed dependency ${dependencyId}: ${reason}`);
+        errors.push({
+          dependencyId,
+          reason,
+        });
+      }
+    }
+
+    // Persist successful dependencies in batch
+    if (successfulDependencies.length > 0) {
+      await createTodoDependencies(childTodoId, successfulDependencies);
+    }
+
+    return { successfulDependencies, errors };
   }
 }

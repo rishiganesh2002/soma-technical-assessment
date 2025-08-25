@@ -12,8 +12,6 @@ export default function Home() {
   const { data: todos = [], isLoading, error } = useFetchTodos();
   const deleteTodoMutation = useDeleteTodo();
 
-  console.log(todos);
-
   const sortedTodos = useMemo(() => {
     if (!isSorted) return todos;
     return sortTodosByDate(todos);
