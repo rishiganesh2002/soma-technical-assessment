@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { TodoService } from "@/services/todoService";
+import { todoService } from "@/services/todoService";
 import { TodoIdSchema } from "@/schema/Todos";
-
-const todoService = new TodoService();
 
 interface Params {
   params: {

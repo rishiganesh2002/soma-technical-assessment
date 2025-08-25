@@ -6,6 +6,10 @@ import { createTodoDependencies } from "../db/TodoDependencies/createTodoDepende
 import { getAllTodoDependencies } from "../db/TodoDependencies/getAllTodoDependencies";
 import { deleteTodoDependencies } from "../db/TodoDependencies/deleteTodoDependencies";
 import { detectCycle, type GraphEdge } from "../utils/server/detectCycle";
+import {
+  calculateCriticalPath,
+  type CriticalPathResult,
+} from "../utils/server/calculateCriticalPath";
 
 export class TodoService {
   async getTodos(): Promise<TodoWithRelations[]> {
@@ -138,4 +142,27 @@ export class TodoService {
       };
     }
   }
+
+  async calculateCriticalPath(): Promise<CriticalPathResult> {
+    try {
+      // Step 1: Retrieve all todos and todo dependencies
+      const todos = await this.getTodos();
+      const dependencies = await getAllTodoDependencies();
+
+      console.log("Retrieved todos:", todos.length);
+      console.log("Retrieved dependencies:", dependencies.length);
+
+      // Step 2: Feed this into calculateCriticalPath helper function
+      const result = calculateCriticalPath(todos, dependencies);
+
+      // Step 3 & 4: Return the complete structured data for UI visualization
+      return result;
+    } catch (error) {
+      console.error("Error in calculateCriticalPath:", error);
+      throw error;
+    }
+  }
 }
+
+// Export a singleton instance to avoid creating multiple instances
+export const todoService = new TodoService();

@@ -14,6 +14,7 @@ model Todo {
   createdAt DateTime  @default(now())
   imageUrl  String?
   imageAlt  String?
+  estimatedCompletionDays Int @default(1)
   
   // Dependency relationships
   dependencies TodoDependency[] @relation("DependentTodos")  // What this task needs to wait for (incoming)

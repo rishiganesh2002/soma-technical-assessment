@@ -4,9 +4,8 @@ import {
   DeleteDependenciesSchema,
   TodoIdParamsSchema,
 } from "../../../../../schema/TodoDependencies";
-import { TodoService } from "../../../../../services/todoService";
+import { todoService } from "../../../../../services/todoService";
 
-// POST /api/todos/[id]/dependencies - Add dependencies
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -36,7 +35,6 @@ export async function POST(
     const { dependencies } = validation.data;
 
     // Use the TodoService to add dependencies
-    const todoService = new TodoService();
     const result = await todoService.addDependenciesToTodo(
       todoId,
       dependencies
@@ -62,7 +60,6 @@ export async function POST(
   }
 }
 
-// DELETE /api/todos/[id]/dependencies?dependencyIds=1,2,3 - Remove dependencies
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -109,7 +106,6 @@ export async function DELETE(
       .map((id) => parseInt(id));
 
     // Use the TodoService to delete dependencies
-    const todoService = new TodoService();
     const result = await todoService.deleteDependenciesFromTodo(dependencyIds);
 
     return NextResponse.json(

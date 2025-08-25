@@ -9,6 +9,7 @@ export async function createTodo(todo: CreateTodoInput): Promise<Todo> {
       dueDate: new Date(todo.dueDate),
       imageUrl: todo.imageUrl,
       imageAlt: todo.imageAlt,
+      estimatedCompletionDays: todo.estimatedCompletionDays,
     },
   });
 }

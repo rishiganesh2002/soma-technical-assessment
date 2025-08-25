@@ -10,6 +10,7 @@ export const TodoSchema = z.object({
   imageUrl: z.string().optional(),
   imageAlt: z.string().optional(),
   dependencies: z.array(z.number()).optional(),
+  estimatedCompletionDays: z.number().int().positive().default(1),
 });
 
 export const TodoIdSchema = z.object({
