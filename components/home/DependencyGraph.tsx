@@ -48,20 +48,39 @@ export default function DependencyGraph() {
       id: todo.id.toString(),
       type: "default",
       data: {
-        label: todo.title,
+        label: (
+          <div className="text-center">
+            <div className="font-semibold text-sm mb-1 leading-tight">
+              {todo.title}
+            </div>
+            <div className="text-xs opacity-90">
+              {todo.estimatedCompletionDays} day
+              {todo.estimatedCompletionDays !== 1 ? "s" : ""}
+            </div>
+          </div>
+        ),
         estimatedDays: todo.estimatedCompletionDays,
         isCritical: todo.isCritical,
       },
       position: { x: 0, y: 0 },
-      width: 260,
-      height: 100,
+      width: 280,
+      height: 120,
       style: {
-        backgroundColor: todo.isCritical ? "#ef4444" : "#f59e0b", // Red for critical, orange for non-critical
+        backgroundColor: todo.isCritical
+          ? "rgba(239, 68, 68, 0.85)" // Red with transparency
+          : "rgba(245, 158, 11, 0.85)", // Orange with transparency
         color: "white",
         border: "2px solid",
-        borderColor: todo.isCritical ? "#dc2626" : "#d97706",
-        borderRadius: "8px",
+        borderColor: todo.isCritical
+          ? "rgba(220, 38, 38, 0.9)" // Darker red border
+          : "rgba(217, 119, 6, 0.9)", // Darker orange border
+        borderRadius: "16px",
         fontWeight: todo.isCritical ? "600" : "500",
+        boxShadow: todo.isCritical
+          ? "0 8px 25px rgba(239, 68, 68, 0.3), 0 4px 10px rgba(0, 0, 0, 0.1)"
+          : "0 8px 25px rgba(245, 158, 11, 0.3), 0 4px 10px rgba(0, 0, 0, 0.1)",
+        backdropFilter: "blur(8px)",
+        transition: "all 0.2s ease-in-out",
       },
     }));
 
@@ -134,8 +153,8 @@ export default function DependencyGraph() {
       },
       children: baseNodes.map((n) => ({
         id: n.id,
-        width: n.width || 260,
-        height: n.height || 100,
+        width: n.width || 280,
+        height: n.height || 120,
       })),
       edges: baseEdges.map((e) => ({
         id: e.id,
