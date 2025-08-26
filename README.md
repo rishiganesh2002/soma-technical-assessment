@@ -89,7 +89,7 @@ The solution that I came up with satisfies each of the aforementioned requiremen
 
 ### Tasks that were done beyond scope
 
-1. Kept the code clean and maintanable with seperation between layers and modular helper functions
+1. Kept the code clean and maintanable with seperation between layers and modular helper functions - code architecture is comprehensible and scalable
 2. Reworked the entire UI/UX on the client side using Shadcn and tailwind to make it look professional, responsive
 3. Added a task management status that allows us to track the completion status of a given task
 4. Added the ability to add and remove dependecies with UX individual Todo page
