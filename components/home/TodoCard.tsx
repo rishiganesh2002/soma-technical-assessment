@@ -65,6 +65,16 @@ export default function TodoCard({
               Due: {new Date(todo.dueDate).toLocaleDateString()}
             </span>
           </div>
+
+          {/* Earliest Possible Start Date */}
+          {todo.earliestPossibleStartDate && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-blue-600">
+                🚀 Can start:{" "}
+                {new Date(todo.earliestPossibleStartDate).toLocaleDateString()}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}

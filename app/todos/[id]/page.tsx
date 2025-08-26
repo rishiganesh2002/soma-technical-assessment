@@ -187,6 +187,25 @@ export default function TodoDetailPage() {
                     </p>
                   </div>
 
+                  {/* Earliest Possible Start Date */}
+                  {todo.earliestPossibleStartDate && (
+                    <div>
+                      <label className="text-sm font-medium text-slate-500">
+                        Earliest Possible Start
+                      </label>
+                      <p className="text-lg text-slate-900 mt-1">
+                        {new Date(
+                          todo.earliestPossibleStartDate
+                        ).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-sm font-medium text-slate-500">
                       Status

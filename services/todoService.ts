@@ -5,11 +5,13 @@ import { getTodos, createTodo, getTodoById, deleteTodoById } from "../db/Todos";
 import { createTodoDependencies } from "../db/TodoDependencies/createTodoDependencies";
 import { getAllTodoDependencies } from "../db/TodoDependencies/getAllTodoDependencies";
 import { deleteTodoDependencies } from "../db/TodoDependencies/deleteTodoDependencies";
+import { updateTodoEstStartDate } from "../db/Todos/updateTodoEstStartDate";
 import { detectCycle, type GraphEdge } from "../utils/server/detectCycle";
 import {
   calculateCriticalPath,
   type CriticalPathResult,
 } from "../utils/server/calculateCriticalPath";
+import { calculateEstimatedStartDates } from "../utils/server/calculateEstimatedStartDates";
 
 export class TodoService {
   async getTodos(): Promise<TodoWithRelations[]> {
@@ -25,6 +27,9 @@ export class TodoService {
       await createTodoDependencies(createdTodo.id, todo.dependencies);
     }
 
+    // Recalculate and update estimated start dates
+    await this.recalculateEstimatedStartDates();
+
     return createdTodo;
   }
 
@@ -33,7 +38,12 @@ export class TodoService {
   }
 
   async deleteTodoById(id: number): Promise<Todo | null> {
-    return await deleteTodoById(id);
+    const deletedTodo = await deleteTodoById(id);
+
+    // Recalculate and update estimated start dates
+    await this.recalculateEstimatedStartDates();
+
+    return deletedTodo;
   }
 
   async addDependenciesToTodo(
@@ -95,6 +105,9 @@ export class TodoService {
     // Persist successful dependencies in batch
     if (successfulDependencies.length > 0) {
       await createTodoDependencies(childTodoId, successfulDependencies);
+
+      // Recalculate and update estimated start dates
+      await this.recalculateEstimatedStartDates();
     }
 
     return { successfulDependencies, errors };
@@ -114,6 +127,9 @@ export class TodoService {
 
       if (deletedCount === dependencyIds.length) {
         // All dependencies were successfully deleted
+        // Recalculate and update estimated start dates
+        await this.recalculateEstimatedStartDates();
+
         return {
           successfulDependencies: dependencyIds,
           errors: [],
@@ -122,6 +138,11 @@ export class TodoService {
         // Some dependencies couldn't be deleted
         const successful = dependencyIds.slice(0, deletedCount);
         const failed = dependencyIds.slice(deletedCount);
+
+        // Only recalculate if some dependencies were actually deleted
+        if (successful.length > 0) {
+          await this.recalculateEstimatedStartDates();
+        }
 
         return {
           successfulDependencies: successful,
@@ -160,6 +181,27 @@ export class TodoService {
     } catch (error) {
       console.error("Error in calculateCriticalPath:", error);
       throw error;
+    }
+  }
+
+  // Helper method to recalculate and update estimated start dates
+  private async recalculateEstimatedStartDates(): Promise<void> {
+    try {
+      // Get fresh todos and dependencies
+      const todos = await this.getTodos();
+      const dependencies = await getAllTodoDependencies();
+
+      // Calculate new estimated start dates
+      const estimatedStartDates = calculateEstimatedStartDates(
+        todos,
+        dependencies
+      );
+
+      // Update the database with new dates
+      await updateTodoEstStartDate(estimatedStartDates);
+    } catch (error) {
+      console.error("Error recalculating estimated start dates:", error);
+      // Don't throw - this is a background operation that shouldn't fail the main operation
     }
   }
 }

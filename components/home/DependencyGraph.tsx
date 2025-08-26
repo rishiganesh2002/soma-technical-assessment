@@ -57,10 +57,17 @@ export default function DependencyGraph() {
               {todo.estimatedCompletionDays} day
               {todo.estimatedCompletionDays !== 1 ? "s" : ""}
             </div>
+            {todo.earliestPossibleStartDate && (
+              <div className="text-xs opacity-75 mt-1 text-blue-100">
+                🚀{" "}
+                {new Date(todo.earliestPossibleStartDate).toLocaleDateString()}
+              </div>
+            )}
           </div>
         ),
         estimatedDays: todo.estimatedCompletionDays,
         isCritical: todo.isCritical,
+        earliestPossibleStartDate: todo.earliestPossibleStartDate,
       },
       position: { x: 0, y: 0 },
       width: 280,
@@ -301,6 +308,10 @@ export default function DependencyGraph() {
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-orange-500 rounded border-2 border-orange-600"></div>
             <span className="text-gray-700">Non-Critical</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600">🚀</span>
+            <span className="text-gray-700">Earliest Start Date</span>
           </div>
         </div>
         {criticalPathData.totalDuration > 0 && (

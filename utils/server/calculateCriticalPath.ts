@@ -7,6 +7,7 @@ export interface CriticalPathResult {
     title: string;
     estimatedCompletionDays: number;
     isCritical: boolean;
+    earliestPossibleStartDate: Date | null;
   }>;
   totalDuration: number;
   // All nodes with critical path marking
@@ -15,6 +16,7 @@ export interface CriticalPathResult {
     title: string;
     estimatedCompletionDays: number;
     isCritical: boolean;
+    earliestPossibleStartDate: Date | null;
   }>;
   // All edges with critical path marking
   allEdges: Array<{
@@ -50,6 +52,7 @@ export function calculateCriticalPath(
         title: todo.title,
         estimatedCompletionDays: (todo as any)?.estimatedCompletionDays || 1,
         isCritical: false,
+        earliestPossibleStartDate: todo.earliestPossibleStartDate,
       })),
       allEdges: dependencies.map((dep) => ({
         parentTodo: dep.parentTodo,
@@ -59,6 +62,24 @@ export function calculateCriticalPath(
     };
   }
 
+  // Precompute adjacency and lookup maps for efficiency
+  const childrenMap = new Map<number, number[]>();
+  for (const dep of dependencies) {
+    const list = childrenMap.get(dep.parentTodo);
+    if (list) {
+      list.push(dep.childTodo);
+    } else {
+      childrenMap.set(dep.parentTodo, [dep.childTodo]);
+    }
+  }
+
+  const todoById = new Map<number, TodoWithRelations>();
+  for (const t of todos) {
+    todoById.set(t.id, t);
+  }
+
+  const bestFrom = new Map<number, { path: number[]; duration: number }>();
+
   // Calculate longest path from each start node
   let longestPath: number[] = [];
   let maxDuration = 0;
@@ -66,8 +87,10 @@ export function calculateCriticalPath(
   for (const startNode of startNodes) {
     const { path, duration } = findLongestPathFromNode(
       startNode.id,
-      todos,
-      new Set()
+      childrenMap,
+      todoById,
+      new Set(),
+      bestFrom
     );
     if (duration > maxDuration) {
       maxDuration = duration;
@@ -92,12 +115,13 @@ export function calculateCriticalPath(
 
   // Build the critical path result
   const criticalPath = longestPath.map((nodeId) => {
-    const todo = todos.find((t) => t.id === nodeId);
+    const todo = todoById.get(nodeId);
     return {
       id: nodeId,
       title: todo?.title || "Unknown Task",
-      estimatedCompletionDays: (todo as any)?.estimatedCompletionDays || 1,
+      estimatedCompletionDays: todo?.estimatedCompletionDays || 1,
       isCritical: true,
+      earliestPossibleStartDate: todo?.earliestPossibleStartDate || null,
     };
   });
 
@@ -105,8 +129,9 @@ export function calculateCriticalPath(
   const allNodes = todos.map((todo) => ({
     id: todo.id,
     title: todo.title,
-    estimatedCompletionDays: (todo as any)?.estimatedCompletionDays || 1,
+    estimatedCompletionDays: todo.estimatedCompletionDays || 1,
     isCritical: longestPath.includes(todo.id),
+    earliestPossibleStartDate: todo.earliestPossibleStartDate || null,
   }));
 
   // Mark all edges with critical path flag
@@ -130,35 +155,39 @@ export function calculateCriticalPath(
 
 function findLongestPathFromNode(
   nodeId: number,
-  todos: TodoWithRelations[],
-  visited: Set<number>
+  childrenMap: Map<number, number[]>,
+  todoById: Map<number, TodoWithRelations>,
+  visited: Set<number>,
+  memo: Map<number, { path: number[]; duration: number }>
 ): { path: number[]; duration: number } {
+  if (memo.has(nodeId)) {
+    return memo.get(nodeId)!;
+  }
+
   if (visited.has(nodeId)) {
     return { path: [], duration: 0 };
   }
 
   visited.add(nodeId);
-  const currentTodo = todos.find((t) => t.id === nodeId);
+  const currentTodo = todoById.get(nodeId);
   if (!currentTodo) {
     visited.delete(nodeId);
     return { path: [], duration: 0 };
   }
 
-  const currentDuration = (currentTodo as any).estimatedCompletionDays || 1;
+  const currentDuration = (currentTodo as any)?.estimatedCompletionDays || 1;
   let maxPath = [nodeId];
   let maxDuration = currentDuration;
 
-  // Find all tasks that depend on this one (children)
-  const children = todos.filter((todo) =>
-    todo.dependencies.some((dep) => dep.parentTodo === nodeId)
-  );
+  const children = childrenMap.get(nodeId) ?? [];
 
-  // Try all dependent tasks
-  for (const child of children) {
+  for (const childId of children) {
     const { path: subPath, duration: subDuration } = findLongestPathFromNode(
-      child.id,
-      todos,
-      new Set(visited)
+      childId,
+      childrenMap,
+      todoById,
+      new Set(visited),
+      memo
     );
 
     const totalDuration = currentDuration + subDuration;
@@ -169,7 +198,9 @@ function findLongestPathFromNode(
   }
 
   visited.delete(nodeId);
-  return { path: maxPath, duration: maxDuration };
+  const result = { path: maxPath, duration: maxDuration };
+  memo.set(nodeId, result);
+  return result;
 }
 
 function isEdgeOnCriticalPath(
