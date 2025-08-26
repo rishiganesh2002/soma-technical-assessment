@@ -102,6 +102,6 @@ The solution that I came up with satisfies each of the aforementioned requiremen
 11. Type safety was maintained throughout using shared types between client and server
 
 **Screenshots**
-![Cycle detection error example](./docs/SomaDetectionCycleExample.png)
+![Cycle detection error example](./docs/SomaCycleDetectionExample.png)
 
 ![Task page UI/UX enhancements](./docs/SomaTaskPageExample.png)
