@@ -112,7 +112,12 @@ export default function CreateTodoForm() {
   };
 
   const handleDateChange = (dateValue: string) => {
-    const isoDate = new Date(dateValue + "T00:00:00.000Z").toISOString();
+    // Create a date in local timezone at midnight, then convert to ISO string
+    // This preserves the user's selected date without timezone conversion issues
+    const [year, month, day] = dateValue.split("-").map(Number);
+    const localDate = new Date(year, month - 1, day); // month is 0-indexed
+    const isoDate = localDate.toISOString();
+
     setFormData((prev) => ({
       ...prev,
       dueDate: isoDate,
