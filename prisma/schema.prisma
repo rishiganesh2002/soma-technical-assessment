@@ -11,7 +11,28 @@ model Todo {
   id        Int      @id @default(autoincrement())
   title     String
   dueDate   DateTime
+  status    String   @default("pending")
   createdAt DateTime  @default(now())
   imageUrl  String?
   imageAlt  String?
+  estimatedCompletionDays Int @default(1)
+  earliestPossibleStartDate DateTime?
+  
+  // Dependency relationships
+  dependencies TodoDependency[] @relation("DependentTodos")  // What this task needs to wait for (incoming)
+  dependents   TodoDependency[] @relation("TodoDependencies") // What tasks are waiting for this task (outgoing)
+}
+
+model TodoDependency {
+  id          Int      @id @default(autoincrement())
+  parentTodo  Int
+  childTodo   Int
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  parent      Todo     @relation("TodoDependencies", fields: [parentTodo], references: [id], onDelete: Cascade)
+  child       Todo     @relation("DependentTodos", fields: [childTodo], references: [id], onDelete: Cascade)
+  
+  // Unique constraint to prevent duplicate dependencies and circular references
+  @@unique([parentTodo, childTodo])
 }

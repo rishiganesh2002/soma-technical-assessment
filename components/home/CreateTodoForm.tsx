@@ -16,9 +16,24 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateTodo } from "@/clientLib/Todos/useCreateTodo";
 import { useSearchImageByQuery } from "@/clientLib/Pexels/useSearchImageByQuery";
+import { useFetchTodos } from "@/clientLib/Todos/useFetchTodos";
 import { CreateTodoInput } from "@/schema/Todos";
-import { Plus, Calendar, Image as ImageIcon } from "lucide-react";
+import { Plus, Calendar, Image as ImageIcon, X } from "lucide-react";
 import debounce from "lodash.debounce";
+import { Badge } from "@/components/ui/badge";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function CreateTodoForm() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,10 +42,17 @@ export default function CreateTodoForm() {
     dueDate: new Date().toISOString(),
     imageUrl: undefined,
     imageAlt: undefined,
+    estimatedCompletionDays: 1,
   });
   const [debouncedTitle, setDebouncedTitle] = useState("");
+  const [selectedDependencies, setSelectedDependencies] = useState<
+    Array<{ id: number; title: string }>
+  >([]);
+  const [dependenciesOpen, setDependenciesOpen] = useState(false);
 
   const createTodoMutation = useCreateTodo();
+  const { data: availableTodos = [], isLoading: isTodosLoading } =
+    useFetchTodos();
 
   // Debounced function to update the search query
   const debouncedSearch = useCallback(
@@ -70,6 +92,7 @@ export default function CreateTodoForm() {
         ...formData,
         imageUrl: imageResult?.imageUrl,
         imageAlt: imageResult?.imageAlt,
+        dependencies: selectedDependencies.map((todo) => todo.id),
       };
 
       await createTodoMutation.mutateAsync(todoData);
@@ -78,8 +101,10 @@ export default function CreateTodoForm() {
         dueDate: new Date().toISOString(),
         imageUrl: undefined,
         imageAlt: undefined,
+        estimatedCompletionDays: 1,
       });
       setDebouncedTitle("");
+      setSelectedDependencies([]);
       setIsOpen(false);
     } catch (error) {
       console.error("Failed to create todo:", error);
@@ -87,11 +112,28 @@ export default function CreateTodoForm() {
   };
 
   const handleDateChange = (dateValue: string) => {
-    const isoDate = new Date(dateValue + "T00:00:00.000Z").toISOString();
+    // Create a date in local timezone at midnight, then convert to ISO string
+    // This preserves the user's selected date without timezone conversion issues
+    const [year, month, day] = dateValue.split("-").map(Number);
+    const localDate = new Date(year, month - 1, day); // month is 0-indexed
+    const isoDate = localDate.toISOString();
+
     setFormData((prev) => ({
       ...prev,
       dueDate: isoDate,
     }));
+  };
+
+  const toggleDependency = (todo: { id: number; title: string }) => {
+    setSelectedDependencies((prev) =>
+      prev.some((dep) => dep.id === todo.id)
+        ? prev.filter((dep) => dep.id !== todo.id)
+        : [...prev, todo]
+    );
+  };
+
+  const removeDependency = (todoId: number) => {
+    setSelectedDependencies((prev) => prev.filter((dep) => dep.id !== todoId));
   };
 
   return (
@@ -104,8 +146,8 @@ export default function CreateTodoForm() {
           <Plus className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[540px] bg-white">
-        <SheetHeader className="space-y-4">
+      <SheetContent className="w-[400px] sm:w-[540px] bg-white max-h-screen overflow-hidden flex flex-col">
+        <SheetHeader className="space-y-4 flex-shrink-0">
           <SheetTitle className="text-2xl font-semibold text-gray-900">
             Create New Task
           </SheetTitle>
@@ -114,7 +156,10 @@ export default function CreateTodoForm() {
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-8">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 mt-8 flex-1 overflow-y-auto pr-2"
+        >
           <div className="space-y-2">
             <Label
               htmlFor="title"
@@ -129,6 +174,110 @@ export default function CreateTodoForm() {
               value={formData.title}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
+              className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+              required
+            />
+          </div>
+
+          {/* Dependencies Section */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">
+              Dependencies (Optional)
+            </Label>
+            <Popover open={dependenciesOpen} onOpenChange={setDependenciesOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={dependenciesOpen}
+                  className="w-full justify-between border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                >
+                  {selectedDependencies.length === 0
+                    ? "Select parent tasks..."
+                    : `${selectedDependencies.length} task${
+                        selectedDependencies.length === 1 ? "" : "s"
+                      } selected`}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput placeholder="Search tasks..." />
+                  <CommandList>
+                    <CommandEmpty>No tasks found.</CommandEmpty>
+                    <CommandGroup>
+                      {isTodosLoading ? (
+                        <div className="p-4 text-center text-sm text-gray-500">
+                          Loading tasks...
+                        </div>
+                      ) : (
+                        availableTodos.map((todo) => (
+                          <CommandItem
+                            key={todo.id}
+                            onSelect={() => toggleDependency(todo)}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedDependencies.some(
+                                  (dep) => dep.id === todo.id
+                                )}
+                                onChange={() => {}}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span>{todo.title}</span>
+                            </div>
+                          </CommandItem>
+                        ))
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Selected Dependencies Display */}
+            {selectedDependencies.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedDependencies.map((todo, index) => (
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="flex items-center gap-1 bg-blue-100 text-blue-800 hover:bg-blue-200"
+                  >
+                    {todo.title}
+                    <button
+                      type="button"
+                      onClick={() => removeDependency(todo.id)}
+                      className="ml-1 hover:text-blue-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Estimated Completion Days Section */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="estimatedCompletionDays"
+              className="text-sm font-medium text-gray-700"
+            >
+              Estimated Completion Days
+            </Label>
+            <Input
+              id="estimatedCompletionDays"
+              type="number"
+              min="1"
+              placeholder="1"
+              value={formData.estimatedCompletionDays}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  estimatedCompletionDays: parseInt(e.target.value) || 1,
+                }))
               }
               className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
               required
@@ -188,29 +337,34 @@ export default function CreateTodoForm() {
               />
             </div>
           </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-              className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                createTodoMutation.isPending ||
-                !formData.title.trim() ||
-                isImageLoading
-              }
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-            >
-              {createTodoMutation.isPending ? "Creating..." : "Create Task"}
-            </Button>
-          </div>
         </form>
+
+        {/* Fixed Button Section */}
+        <div className="flex gap-3 pt-4 mt-6 border-t border-gray-200 flex-shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsOpen(false)}
+            className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={
+              createTodoMutation.isPending ||
+              !formData.title.trim() ||
+              isImageLoading
+            }
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSubmit(e);
+            }}
+          >
+            {createTodoMutation.isPending ? "Creating..." : "Create Task"}
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );

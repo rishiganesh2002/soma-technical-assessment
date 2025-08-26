@@ -1,15 +1,18 @@
 "use client";
-import { Todo } from "@prisma/client";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import type { TodoWithRelations } from "../schema/Todos";
 import { useState, useMemo } from "react";
 import { useFetchTodos, useDeleteTodo } from "../clientLib/Todos";
-import { isPastDueDate, sortTodosByDate } from "../utils/client";
-import { CreateTodoForm } from "../components/home";
+import { sortTodosByDate } from "../utils/client";
+import {
+  CreateTodoForm,
+  TodoCard,
+  DependencyGraph,
+  TodoStats,
+} from "../components/home";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
-  const router = useRouter();
   const [isSorted, setIsSorted] = useState(false);
   const { data: todos = [], isLoading, error } = useFetchTodos();
   const deleteTodoMutation = useDeleteTodo();
@@ -107,50 +110,42 @@ export default function Home() {
           <p className="text-slate-600 text-lg font-medium mb-6">
             Manage your complex workflows with visual inspiration ✨
           </p>
-
-          {/* Sort Toggle */}
-          {todos.length > 0 && (
-            <div className="flex justify-start">
-              <button
-                onClick={() => setIsSorted(!isSorted)}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  isSorted
-                    ? "bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200"
-                    : "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
-                }`}
-                title={
-                  isSorted
-                    ? "Show original order"
-                    : "Sort by due date (earliest first)"
-                }
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
-                  />
-                </svg>
-                {isSorted ? "Original Order" : "Sort by Date"}
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Tasks List */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {sortedTodos.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md mx-auto">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        {/* Tabs */}
+        <Tabs defaultValue="tasks" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="tasks" className="text-base font-medium">
+              📋 Tasks
+            </TabsTrigger>
+            <TabsTrigger value="graph" className="text-base font-medium">
+              🕸️ Dependency Graph
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tasks Tab */}
+          <TabsContent value="tasks" className="space-y-6">
+            {/* Stats Dashboard */}
+            {todos.length > 0 && <TodoStats todos={todos} />}
+
+            {/* Sort Toggle */}
+            {todos.length > 0 && (
+              <div className="flex justify-start">
+                <button
+                  onClick={() => setIsSorted(!isSorted)}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    isSorted
+                      ? "bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200"
+                      : "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
+                  }`}
+                  title={
+                    isSorted
+                      ? "Show original order"
+                      : "Sort by due date (earliest first)"
+                  }
+                >
                   <svg
-                    className="w-10 h-10 text-blue-600"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -159,126 +154,69 @@ export default function Home() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
                     />
                   </svg>
-                </div>
-                <div className="text-slate-400 text-xl font-semibold mb-2">
-                  No tasks yet
-                </div>
-                <div className="text-slate-500">
-                  Create your first task to get started!
-                </div>
+                  {isSorted ? "Original Order" : "Sort by Date"}
+                </button>
               </div>
-            </div>
-          ) : (
-            sortedTodos.map((todo: Todo) => {
-              const isPastDue = isPastDueDate(todo.dueDate);
-              return (
-                <div
-                  key={todo.id}
-                  className="group bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  <div className="flex flex-col gap-4">
-                    {/* Image Thumbnail */}
-                    {todo.imageUrl && (
-                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-50 to-slate-100">
-                        <Image
-                          src={todo.imageUrl}
-                          alt={todo.imageAlt || `Image for ${todo.title}`}
-                          width={300}
-                          height={200}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+            )}
+
+            {/* Tasks List */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {sortedTodos.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md mx-auto">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-10 h-10 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                         />
-                        {/* Hover Overlay with Alt Text */}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <p className="text-white text-sm text-center px-4 leading-relaxed">
-                            {todo.imageAlt}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Todo Content */}
-                    <div className="flex-1 space-y-3">
-                      <h3 className="text-xl font-semibold text-slate-900 group-hover:text-blue-900 transition-colors duration-200">
-                        {todo.title}
-                      </h3>
-
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
-                            isPastDue
-                              ? "bg-red-100 text-red-700 border border-red-200 shadow-sm"
-                              : "bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm"
-                          }`}
-                        >
-                          {isPastDue ? "⚠️ Past Due" : "✅ On Track"}
-                        </span>
-                        <span
-                          className={`text-sm font-medium ${
-                            isPastDue ? "text-red-600" : "text-slate-600"
-                          }`}
-                        >
-                          Due: {new Date(todo.dueDate).toLocaleDateString()}
-                        </span>
-                      </div>
+                      </svg>
                     </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex justify-between items-end mt-auto">
-                      <button
-                        onClick={() => handleDeleteTodo(todo.id)}
-                        disabled={deleteTodoMutation.isPending}
-                        className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 disabled:opacity-50 group-hover:bg-slate-50"
-                        title="Delete task"
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => router.push(`/todos/${todo.id}`)}
-                        className="p-3 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all duration-200 group-hover:bg-slate-50"
-                        title="View task details"
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                      </button>
+                    <div className="text-slate-400 text-xl font-semibold mb-2">
+                      No tasks yet
+                    </div>
+                    <div className="text-slate-500">
+                      Create your first task to get started!
                     </div>
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              ) : (
+                sortedTodos.map((todo: TodoWithRelations) => (
+                  <TodoCard
+                    key={todo.id}
+                    todo={todo}
+                    onDelete={handleDeleteTodo}
+                    isDeleting={deleteTodoMutation.isPending}
+                  />
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Graph Tab */}
+          <TabsContent value="graph" className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-semibold text-slate-900 mb-2">
+                Task Dependencies
+              </h2>
+              <p className="text-slate-600">
+                Visualize how your tasks are connected and identify critical
+                paths
+              </p>
+            </div>
+            <DependencyGraph />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Floating Action Button */}
