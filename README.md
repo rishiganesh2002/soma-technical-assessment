@@ -61,6 +61,9 @@ The solution that I came up with satisfies each of the aforementioned requiremen
 1. I implemented a date picker in the task creation form with standardized timezone handling that synchronizes the due date with the database
 2. Added the visual indicator with red highlighting and user friendly icons to indicate if a task was overdue
 
+**Screenshot**
+![Due date UI and overdue highlighting](./docs/SomaTask1.png)
+
 ### Part 2 - Image Generation
 
 1. I implemented a modular, standardized singleton implementation of a Pexels client to streamline development
@@ -68,6 +71,9 @@ The solution that I came up with satisfies each of the aforementioned requiremen
 3. Reworked the UX to show the users a live preview of the image that would be associated with their task using intelligent frontend handling to respect rate limits (debouncing)
 4. Image caching by storing the pexels image url in database to avoid repeated refetches since I realized image returned for a given query was fairly deterministic
 5. Graceful error handling using react query's error state
+
+**Screenshot**
+![Image preview with loading states (Pexels API)](./docs/SomaTask2.png)
 
 ### Part 3 - Task Dependencies
 
@@ -77,6 +83,9 @@ The solution that I came up with satisfies each of the aforementioned requiremen
 4. Implemented a version of longest path graph traversal by using task duration as weights in the determination of the critical path (https://www.youtube.com/watch?v=rxGcV0tuxRU)
 5. Used React Flow to visualize tasks and their dependencies with clear visual indicators, colors and an associated legend
 6. Calculated earliest start date using the PDM forward pass algorithm to incrementally track latest starts and latest finish dates to bubble dates over using dependencies. This also gets dynamically recalculated whenever the todos or the dependencies are altered to make sure our database syncs these with the latest updates. (https://www.youtube.com/watch?v=GRlXRYok3oQ&ab_channel=Engineer4Free)
+
+**Screenshot**
+![Dependency graph, critical path, and earliest start dates](./docs/SomaTask3.png)
 
 ### Tasks that were done beyond scope
 
@@ -91,3 +100,8 @@ The solution that I came up with satisfies each of the aforementioned requiremen
 9. Clear code quality - readable code that can be worked with in the future
 10. Input validation using zod for server error handling of incoming responses/params
 11. Type safety was maintained throughout using shared types between client and server
+
+**Screenshots**
+![Cycle detection error example](./docs/SomaDetectionCycleExample.png)
+
+![Task page UI/UX enhancements](./docs/SomaTaskPageExample.png)
