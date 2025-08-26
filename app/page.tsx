@@ -3,7 +3,12 @@ import type { TodoWithRelations } from "../schema/Todos";
 import { useState, useMemo } from "react";
 import { useFetchTodos, useDeleteTodo } from "../clientLib/Todos";
 import { sortTodosByDate } from "../utils/client";
-import { CreateTodoForm, TodoCard, DependencyGraph } from "../components/home";
+import {
+  CreateTodoForm,
+  TodoCard,
+  DependencyGraph,
+  TodoStats,
+} from "../components/home";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -120,6 +125,9 @@ export default function Home() {
 
           {/* Tasks Tab */}
           <TabsContent value="tasks" className="space-y-6">
+            {/* Stats Dashboard */}
+            {todos.length > 0 && <TodoStats todos={todos} />}
+
             {/* Sort Toggle */}
             {todos.length > 0 && (
               <div className="flex justify-start">
