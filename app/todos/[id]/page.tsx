@@ -1,11 +1,20 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
 import { useGetTodoById } from "../../../clientLib/Todos/useGetTodoById";
+import { useUpdateTodoStatusById } from "../../../clientLib/Todos/useUpdateTodoStatusById";
 import { isPastDueDate } from "../../../utils/client/pastDueDate";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { DependencyForm } from "../../../components/todoDetail/DependencyForm";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useState, useEffect } from "react";
 
 export default function TodoDetailPage() {
   const params = useParams();
@@ -13,6 +22,32 @@ export default function TodoDetailPage() {
   const todoId = Number(params.id);
 
   const { data: todo, isLoading, error } = useGetTodoById(todoId);
+  const updateStatusMutation = useUpdateTodoStatusById();
+  const [localStatus, setLocalStatus] = useState<string>("");
+
+  // Set local status when todo data loads
+  useEffect(() => {
+    if (todo?.status) {
+      setLocalStatus(todo.status);
+    }
+  }, [todo?.status]);
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!todo) return;
+
+    setLocalStatus(newStatus);
+
+    try {
+      await updateStatusMutation.mutateAsync({
+        id: todo.id,
+        status: newStatus,
+      });
+    } catch (error) {
+      // Revert local status on error
+      setLocalStatus(todo.status);
+      console.error("Failed to update status:", error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -126,6 +161,21 @@ export default function TodoDetailPage() {
             >
               Due: {new Date(todo.dueDate).toLocaleDateString()}
             </span>
+            <span
+              className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${
+                todo.status === "completed"
+                  ? "bg-green-100 text-green-700 border border-green-200"
+                  : todo.status === "inProgress"
+                  ? "bg-blue-100 text-blue-700 border border-blue-200"
+                  : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+              }`}
+            >
+              {todo.status === "completed"
+                ? "✅ Completed"
+                : todo.status === "inProgress"
+                ? "🔄 In Progress"
+                : "⏳ Pending"}
+            </span>
           </div>
           <div className="text-sm text-slate-500 mt-2">
             Dependencies: {todo.dependencies.length} • Dependents:{" "}
@@ -211,15 +261,40 @@ export default function TodoDetailPage() {
                       Status
                     </label>
                     <div className="mt-1">
-                      <span
-                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${
-                          isPastDue
-                            ? "bg-red-100 text-red-700 border border-red-200"
-                            : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                        }`}
+                      <Select
+                        value={localStatus}
+                        onValueChange={handleStatusChange}
+                        disabled={updateStatusMutation.isPending}
                       >
-                        {isPastDue ? "⚠️ Past Due" : "✅ On Track"}
-                      </span>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                              Pending
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="inProgress">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                              In Progress
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="completed">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                              Completed
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {updateStatusMutation.isPending && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          Updating...
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

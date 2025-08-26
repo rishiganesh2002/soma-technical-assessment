@@ -6,6 +6,7 @@ import { createTodoDependencies } from "../db/TodoDependencies/createTodoDepende
 import { getAllTodoDependencies } from "../db/TodoDependencies/getAllTodoDependencies";
 import { deleteTodoDependencies } from "../db/TodoDependencies/deleteTodoDependencies";
 import { updateTodoEstStartDate } from "../db/Todos/updateTodoEstStartDate";
+import { updateTodoStatusById } from "../db/Todos/updateTodoStatusById";
 import { detectCycle, type GraphEdge } from "../utils/server/detectCycle";
 import {
   calculateCriticalPath,
@@ -182,6 +183,13 @@ export class TodoService {
       console.error("Error in calculateCriticalPath:", error);
       throw error;
     }
+  }
+
+  async updateTodoStatus(
+    id: number,
+    status: string
+  ): Promise<{ id: number; status: string } | null> {
+    return await updateTodoStatusById(id, status);
   }
 
   // Helper method to recalculate and update estimated start dates

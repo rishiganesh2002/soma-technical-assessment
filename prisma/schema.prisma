@@ -11,6 +11,7 @@ model Todo {
   id        Int      @id @default(autoincrement())
   title     String
   dueDate   DateTime
+  status    String   @default("pending")
   createdAt DateTime  @default(now())
   imageUrl  String?
   imageAlt  String?

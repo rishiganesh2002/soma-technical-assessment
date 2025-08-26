@@ -66,6 +66,25 @@ export default function TodoCard({
             </span>
           </div>
 
+          {/* Todo Status */}
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
+                todo.status === "completed"
+                  ? "bg-green-100 text-green-700 border border-green-200 shadow-sm"
+                  : todo.status === "inProgress"
+                  ? "bg-blue-100 text-blue-700 border border-blue-200 shadow-sm"
+                  : "bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm"
+              }`}
+            >
+              {todo.status === "completed"
+                ? "✅ Completed"
+                : todo.status === "inProgress"
+                ? "🔄 In Progress"
+                : "⏳ Pending"}
+            </span>
+          </div>
+
           {/* Earliest Possible Start Date */}
           {todo.earliestPossibleStartDate && (
             <div className="flex items-center gap-2">
